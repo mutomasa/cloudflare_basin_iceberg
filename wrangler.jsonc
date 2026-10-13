@@ -1,0 +1,14 @@
+{
+	"name": "hello-world-pipeline",
+	"main": "src/index.js",
+	"compatibility_date": "2026-10-06",
+	"observability": {
+		"enabled": true,
+	},
+	"pipelines": [
+		{
+			"stream": "e70a18a0ea844cfda57718a0511bd090",
+			"binding": "STREAM",
+		},
+	],
+}

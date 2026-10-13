@@ -1,0 +1,9 @@
+{
+	"fields": [
+		{ "name": "timestamp", "type": "string", "required": true },
+		{ "name": "method", "type": "string", "required": true },
+		{ "name": "path", "type": "string", "required": true },
+		{ "name": "user_agent", "type": "string", "required": false },
+		{ "name": "country", "type": "string", "required": false }
+	]
+}
