@@ -64,14 +64,18 @@ Kafka に近い役割をしているのは **Stream** で、**Worker はデー�
 | Kafka Connect の Sink Connector | Sink `events_sink` | 外部ストレージに書き出す |
 | 保存先(S3 + Iceberg など) | R2 + Iceberg テーブル | データを蓄積する |
 
+Kafka の構成:
+
 ```mermaid
 flowchart LR
-    subgraph Kafka[Kafka の構成]
-        KP[Producer] --> KT[Topic] --> KS[Kafka Streams / Flink] --> KC[Sink Connector] --> KD[(S3 + Iceberg)]
-    end
-    subgraph CF[今回の構成]
-        W[Worker] --> S[Stream] --> P[Pipeline] --> K[Sink] --> R[(R2 + Iceberg)]
-    end
+    KP[Producer] --> KT[Topic] --> KS[Kafka Streams / Flink] --> KC[Sink Connector] --> KD[(S3 + Iceberg)]
+```
+
+今回の構成:
+
+```mermaid
+flowchart LR
+    W[Worker] --> S[Stream] --> P[Pipeline] --> K[Sink] --> R[(R2 + Iceberg)]
 ```
 
 Kafka と違う点:
@@ -200,30 +204,28 @@ Spark・DuckDB・PyIceberg などのほかのエンジンを使う場合は、�
 ## アーキテクチャ図
 
 ```mermaid
-flowchart LR
+flowchart TB
     Client[クライアント<br/>ブラウザ / curl]
+    Worker["Worker<br/>hello-world-pipeline"]
 
-    subgraph CF[Cloudflare]
-        Worker["Worker<br/>hello-world-pipeline<br/>(src/index.js)"]
-        Stream["Stream<br/>request_events_v2<br/>string 5列"]
+    subgraph PL[Cloudflare Pipelines]
+        direction LR
+        Stream["Stream<br/>request_events_v2"]
         Pipeline["Pipeline<br/>request_events_v2_iceberg"]
-        Sink["Sink<br/>events_sink<br/>parquet / zstd, 300s"]
-
-        subgraph R2[R2 バケット: <バケット名>]
-            Catalog["Basin Catalog"]
-            Table[("Iceberg テーブル<br/>default.request_events")]
-        end
-
-        SQL["Basin SQL"]
+        Sink["Sink<br/>events_sink"]
+        Stream --> Pipeline -- "INSERT INTO" --> Sink
     end
 
-    Client -- HTTP リクエスト --> Worker
-    Worker -- "Hello World!" --> Client
-    Worker -- "env.STREAM.send()<br/>(ctx.waitUntil)" --> Stream
-    Stream --> Pipeline
-    Pipeline -- "INSERT INTO events_sink" --> Sink
-    Sink -- コミット --> Catalog
-    Catalog --- Table
+    subgraph R2[R2 バケット + Data Catalog]
+        direction LR
+        Catalog["Basin Catalog"] --- Table[("Iceberg テーブル<br/>default.request_events")]
+    end
+
+    SQL["Basin SQL"]
+
+    Client -- "HTTP リクエスト / Hello World!" <--> Worker
+    Worker -- "env.STREAM.send()" --> Stream
+    Sink -- "parquet 書き込み + コミット" --> Catalog
     SQL -- "wrangler r2 sql query" --> Table
 ```
 
